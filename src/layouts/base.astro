@@ -248,16 +248,18 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
         const openModal = document.querySelector('.modal:popover-open')
         if (!openModal) return
 
-        // 计算“真实可见的图片内容区域”（考虑 object-fit: scale-down 造成的留白）
+        // 计算"真实可见的媒体内容区域"（考虑 object-fit: scale-down 造成的留白）
         const imgEl = openModal.querySelector('.modal-img')
-        if (!imgEl) return
+        const videoEl = openModal.querySelector('.modal-video')
+        const mediaEl = imgEl || videoEl
+        if (!mediaEl) return
 
-        const isPointInImageContent = (img, clientX, clientY) => {
-          const rect = img.getBoundingClientRect()
+        const isPointInImageContent = (media, clientX, clientY) => {
+          const rect = media.getBoundingClientRect()
           const x = clientX, y = clientY
-          const natW = img.naturalWidth || img.videoWidth || 0
-          const natH = img.naturalHeight || img.videoHeight || 0
-          // 若图片/视频尚未获得固有尺寸（未加载完），一律视为“不在内容内”，避免误触切换
+          const natW = media.naturalWidth || media.videoWidth || 0
+          const natH = media.naturalHeight || media.videoHeight || 0
+          // 若媒体尚未获得固有尺寸（未加载完），一律视为"不在内容内"，避免误触切换
           if (!natW || !natH) return false
           const scaleDown = Math.min(rect.width / natW, rect.height / natH, 1)
           const contentW = natW * scaleDown
@@ -269,7 +271,7 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
           return x >= left && x <= right && y >= top && y <= bottom
         }
 
-        const insideContent = isPointInImageContent(imgEl, e.clientX, e.clientY)
+        const insideContent = isPointInImageContent(mediaEl, e.clientX, e.clientY)
         
         // 检查是否点击在导航按钮上，如果是则不处理
         if (e.target.closest('.nav-btn')) {
@@ -278,9 +280,9 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
         
         if (insideContent) {
           // 在内容区域内点按左右半区切换上下一个
-          const rect = imgEl.getBoundingClientRect()
-          const natW = imgEl.naturalWidth || imgEl.videoWidth || rect.width
-          const natH = imgEl.naturalHeight || imgEl.videoHeight || rect.height
+          const rect = mediaEl.getBoundingClientRect()
+          const natW = mediaEl.naturalWidth || mediaEl.videoWidth || rect.width
+          const natH = mediaEl.naturalHeight || mediaEl.videoHeight || rect.height
           const scaleDown = Math.min(rect.width / natW, rect.height / natH, 1)
           const contentW = natW * scaleDown
           const left = rect.left + (rect.width - contentW) / 2
@@ -306,6 +308,70 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
           try { openModal?.hidePopover?.() } catch {}
           try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
         }
+      })
+
+      // 添加触摸事件处理，支持上下滑动切换媒体
+      let touchStartY = 0
+      let touchStartX = 0
+      let touchMoved = false
+
+      document.addEventListener('touchstart', (e) => {
+        const openModal = document.querySelector('.modal:popover-open')
+        if (!openModal) return
+        
+        touchStartY = e.touches[0].clientY
+        touchStartX = e.touches[0].clientX
+        touchMoved = false
+      })
+
+      document.addEventListener('touchmove', (e) => {
+        const openModal = document.querySelector('.modal:popover-open')
+        if (!openModal) return
+        
+        const touchY = e.touches[0].clientY
+        const touchX = e.touches[0].clientX
+        const diffY = Math.abs(touchY - touchStartY)
+        const diffX = Math.abs(touchX - touchStartX)
+        
+        // 检测垂直或水平滑动
+        if (diffY > 10 || diffX > 10) {
+          touchMoved = true
+        }
+      })
+
+      document.addEventListener('touchend', (e) => {
+        const openModal = document.querySelector('.modal:popover-open')
+        if (!openModal || !touchMoved) return
+        
+        const touchEndY = e.changedTouches[0].clientY
+        const touchEndX = e.changedTouches[0].clientX
+        const diffY = touchEndY - touchStartY
+        const diffX = touchEndX - touchStartX
+        
+        // 判断是否为有效滑动（距离大于50px）
+        if (Math.abs(diffY) > 50 || Math.abs(diffX) > 50) {
+          let usePrev = false
+          
+          // 垂直滑动优先
+          if (Math.abs(diffY) > Math.abs(diffX)) {
+            usePrev = diffY > 0 // 向下滑动切换到上一个
+          } else {
+            usePrev = diffX > 0 // 向右滑动切换到上一个
+          }
+          
+          const navEl = openModal.querySelector(usePrev ? '.nav-prev' : '.nav-next')
+          if (navEl && navEl.dataset.target) {
+            const nextId = navEl.dataset.target
+            const target = document.getElementById(nextId)
+            if (target?.showPopover) {
+              try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+              try { openModal?.hidePopover?.() } catch {}
+              target.showPopover()
+            }
+          }
+        }
+        
+        touchMoved = false
       })
 
       // 方向键切换与 Esc 关闭

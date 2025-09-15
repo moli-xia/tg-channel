@@ -62,38 +62,38 @@ function toProxy(u, staticProxy) {
   return staticProxy + (s.startsWith('/') ? s.slice(1) : s)
 }
 
-function getImages($, item, { staticProxy, id, index, title }) {
+function getImages($, item, { staticProxy, id, index, title, totalMediaCount = 0, mediaOffset = 0 }) {
   const photos = $(item).find('.tgme_widget_message_photo_wrap')
   const urls = photos?.map((_i, photo) => $(photo).attr('style').match(/url\(["'](.*?)["']\)/)?.[1])?.get() || []
   if (!urls.length) {
     return ''
   }
-
   const loading = index > 15 ? 'eager' : 'lazy'
   const images = urls.map((url, i) => {
-    const popoverId = `modal-${id}-${i}`
-    const prevId = `modal-${id}-${(i - 1 + urls.length) % urls.length}`
-    const nextId = `modal-${id}-${(i + 1) % urls.length}`
+    const mediaIndex = mediaOffset + i
+    const popoverId = `modal-${id}-${mediaIndex}`
+    
+    // 计算上一个和下一个媒体的索引（跨越图片和视频）
+    const prevIndex = (mediaIndex - 1 + totalMediaCount) % totalMediaCount
+    const nextIndex = (mediaIndex + 1) % totalMediaCount
+    const prevId = `modal-${id}-${prevIndex}`
+    const nextId = `modal-${id}-${nextIndex}`
+    
     const imgUrl = toProxy(url, staticProxy)
-    const navHtml = urls.length > 1
-      ? `<div class="nav-btn nav-prev" data-target="${prevId}" aria-label="上一张">&#10094;</div>
-        <div class="nav-btn nav-next" data-target="${nextId}" aria-label="下一张">&#10095;</div>`
-      : ''
+    const navHtml = totalMediaCount > 1 ? `<div class="nav-btn nav-prev" data-target="${prevId}" aria-label="上一张">&#10094;</div>
+        <div class="nav-btn nav-next" data-target="${nextId}" aria-label="下一张">&#10095;</div>` : ''
     return `
-      <button class="image-preview-button image-preview-wrap" popovertarget="${popoverId}" popovertargetaction="show" data-group="${id}" data-index="${i}">
+      <button class="image-preview-button image-preview-wrap" popovertarget="${popoverId}" popovertargetaction="show" data-group="${id}" data-index="${mediaIndex}">
         <img src="${imgUrl}" alt="${title}" loading="${loading}" />
       </button>
-      <div class="image-preview-button modal" id="${popoverId}" popover data-group="${id}" data-index="${i}">
+      <div class="image-preview-button modal" id="${popoverId}" popover data-group="${id}" data-index="${mediaIndex}">
         <div class="modal-backdrop" aria-hidden="true"></div>
         <img class="modal-img" src="${imgUrl}" alt="${title}" loading="lazy" />
         ${navHtml}
       </div>
     `
   })
-
-  return images.length
-    ? `<div class="image-list-container ${images.length % 2 === 0 ? 'image-list-even' : 'image-list-odd'}" data-group="${id}">${images.join('')}</div>`
-    : ''
+  return images.length ? `<div class="image-list-container ${images.length % 2 === 0 ? 'image-list-even' : 'image-list-odd'}" data-group="${id}">${images.join('')}</div>` : ''
 }
 
 // helper: extract background-image url from inline style
@@ -126,11 +126,14 @@ function isSafeImagePoster(u) {
   }
 }
 
-function getVideo($, item, { staticProxy, index }) {
+function getVideo($, item, { staticProxy, index, id, title, totalMediaCount = 0, mediaOffset = 0 }) {
   const preload = index > 15 ? 'auto' : 'metadata'
 
   const videoWrap = $(item).find('.tgme_widget_message_video_wrap')
   const video = videoWrap.find('video')
+  
+  // 如果没有视频，返回空字符串
+  if (!video.length) return ''
 
   function findPoster(scope) {
     // 1. 从视频相关元素的背景图片中提取
@@ -200,28 +203,85 @@ function getVideo($, item, { staticProxy, index }) {
     video?.removeAttr('poster')
   }
 
-  video?.attr('src', toProxy(video?.attr('src'), staticProxy))
+  const videoSrc = toProxy(video?.attr('src'), staticProxy)
+  video?.attr('src', videoSrc)
     ?.attr('controls', true)
     ?.attr('preload', preload)
     ?.attr('playsinline', true).attr('webkit-playsinline', true)
+
+  // 为视频添加全屏预览功能（类似图片）
+  const mediaIndex = mediaOffset
+  const popoverId = `modal-${id}-${mediaIndex}`
+  
+  // 计算上一个和下一个媒体的索引（跨越图片和视频）
+  const prevIndex = (mediaIndex - 1 + totalMediaCount) % totalMediaCount
+  const nextIndex = (mediaIndex + 1) % totalMediaCount
+  const prevId = `modal-${id}-${prevIndex}`
+  const nextId = `modal-${id}-${nextIndex}`
+  
+  const videoHtml = $.html(video)
+  
+  // 添加导航按钮
+  const navHtml = totalMediaCount > 1 ? `<div class="nav-btn nav-prev" data-target="${prevId}" aria-label="上一个">&#10094;</div>
+        <div class="nav-btn nav-next" data-target="${nextId}" aria-label="下一个">&#10095;</div>` : ''
+  
+  // 创建带有全屏预览功能的视频HTML
+  const videoWithModal = `
+    <div class="video-preview-container">
+      <button class="video-preview-button" popovertarget="${popoverId}" popovertargetaction="show" data-group="${id}" data-type="video" data-index="${mediaIndex}">
+        ${videoHtml}
+      </button>
+      <div class="video-preview-modal modal" id="${popoverId}" popover data-group="${id}" data-type="video" data-index="${mediaIndex}">
+        <div class="modal-backdrop" aria-hidden="true"></div>
+        <video class="modal-video" src="${videoSrc}" controls preload="${preload}" playsinline webkit-playsinline ${posterCandidate ? `poster="${toProxy(posterCandidate, staticProxy)}"` : ''}></video>
+        ${navHtml}
+      </div>
+    </div>
+  `
 
   const roundWrap = $(item).find('.tgme_widget_message_roundvideo_wrap')
   const roundVideo = roundWrap.find('video')
 
-  const roundPosterCandidate = roundVideo?.attr('poster') || findPoster(roundWrap.length ? roundWrap : $(item))
-  if (isSafeImagePoster(roundPosterCandidate)) {
-    roundVideo?.attr('poster', toProxy(roundPosterCandidate, staticProxy))
-  }
-  else {
-    roundVideo?.removeAttr('poster')
+  let roundVideoHtml = ''
+  if (roundVideo.length) {
+    const roundPosterCandidate = roundVideo?.attr('poster') || findPoster(roundWrap.length ? roundWrap : $(item))
+    if (isSafeImagePoster(roundPosterCandidate)) {
+      roundVideo?.attr('poster', toProxy(roundPosterCandidate, staticProxy))
+    }
+    else {
+      roundVideo?.removeAttr('poster')
+    }
+
+    const roundVideoSrc = toProxy(roundVideo?.attr('src'), staticProxy)
+    roundVideo?.attr('src', roundVideoSrc)
+      ?.attr('controls', true)
+      ?.attr('preload', preload)
+      ?.attr('playsinline', true).attr('webkit-playsinline', true)
+
+    const roundMediaIndex = mediaOffset + 1
+    const roundPopoverId = `modal-${id}-${roundMediaIndex}`
+    const roundPrevIndex = (roundMediaIndex - 1 + totalMediaCount) % totalMediaCount
+    const roundNextIndex = (roundMediaIndex + 1) % totalMediaCount
+    const roundPrevId = `modal-${id}-${roundPrevIndex}`
+    const roundNextId = `modal-${id}-${roundNextIndex}`
+    const roundNavHtml = totalMediaCount > 1 ? `<div class="nav-btn nav-prev" data-target="${roundPrevId}" aria-label="上一个">&#10094;</div>
+        <div class="nav-btn nav-next" data-target="${roundNextId}" aria-label="下一个">&#10095;</div>` : ''
+    
+    roundVideoHtml = `
+      <div class="video-preview-container">
+        <button class="video-preview-button" popovertarget="${roundPopoverId}" popovertargetaction="show" data-group="${id}" data-type="video" data-index="${roundMediaIndex}">
+          ${$.html(roundVideo)}
+        </button>
+        <div class="video-preview-modal modal" id="${roundPopoverId}" popover data-group="${id}" data-type="video" data-index="${roundMediaIndex}">
+          <div class="modal-backdrop" aria-hidden="true"></div>
+          <video class="modal-video" src="${roundVideoSrc}" controls preload="${preload}" playsinline webkit-playsinline ${roundPosterCandidate ? `poster="${toProxy(roundPosterCandidate, staticProxy)}"` : ''}></video>
+          ${roundNavHtml}
+        </div>
+      </div>
+    `
   }
 
-  roundVideo?.attr('src', toProxy(roundVideo?.attr('src'), staticProxy))
-    ?.attr('controls', true)
-    ?.attr('preload', preload)
-    ?.attr('playsinline', true).attr('webkit-playsinline', true)
-
-  return $.html(video) + $.html(roundVideo)
+  return videoWithModal + roundVideoHtml
 }
 
 function getAudio($, item, { staticProxy }) {
@@ -298,6 +358,17 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
     $(a)?.attr('href', `/search/${encodeURIComponent($(a)?.text())}`)
   })?.map((_index, a) => $(a)?.text()?.replace('#', ''))?.get()
 
+  // 统计媒体元素数量以生成正确的导航
+  const photos = $(item).find(".tgme_widget_message_photo_wrap");
+  const videoWrap = $(item).find('.tgme_widget_message_video_wrap')
+  const video = videoWrap.find('video')
+  const roundWrap = $(item).find('.tgme_widget_message_roundvideo_wrap')
+  const roundVideo = roundWrap.find('video')
+  
+  const imageCount = photos.length
+  const videoCount = (video.length ? 1 : 0) + (roundVideo.length ? 1 : 0)
+  const totalMediaCount = imageCount + videoCount
+
   return {
     id,
     title,
@@ -307,9 +378,9 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
     text: content?.text(),
     content: [
       getReply($, item, { channel }),
-      getImages($, item, { staticProxy, id, index, title }),
-      getVideo($, item, { staticProxy, id, index, title }),
-      getAudio($, item, { staticProxy, id, index, title }),
+      getImages($, item, { staticProxy, id, index, title, totalMediaCount, mediaOffset: 0 }),
+      getVideo($, item, { staticProxy, id, index, title, totalMediaCount, mediaOffset: imageCount }),
+      getAudio($, item, { staticProxy }),
       content?.html(),
       getImageStickers($, item, { staticProxy, index }),
       getVideoStickers($, item, { staticProxy, index }),

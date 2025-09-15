@@ -61,6 +61,52 @@
     aspect-ratio: 1 / 1;
   }
 
+  /* 视频预览容器样式 */
+  .video-preview-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .video-preview-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+  }
+
+  .video-preview-button video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* 视频模态框样式 */
+  .video-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .video-preview-modal .modal-video {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
   .tgme_widget_message_link_preview:has(.link_preview_image) {
     display: flex;
     position: relative;

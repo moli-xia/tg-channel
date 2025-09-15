@@ -295,7 +295,8 @@ const timeago = datetime.isBefore(dayjs().subtract(1, 'w')) ? datetime.format('H
             touchStartY = e.touches[0].clientY;
             applyTransform();
           } else {
-            if (Math.abs(dx) > 10) touchMoved = true;
+            // 检测水平或垂直滑动
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) touchMoved = true;
           }
         } else if (e.touches.length === 2) {
           e.preventDefault();
@@ -346,10 +347,22 @@ const timeago = datetime.isBefore(dayjs().subtract(1, 'w')) ? datetime.format('H
           }
         }
 
-        if (scale === 1 && touchMoved) {
-          const diff = endX - touchStartX;
-          if (Math.abs(diff) > 40) {
-            if (diff > 0) prev(); else next();
+        // 滑动切换逻辑：支持水平和垂直滑动
+        if (scale === 1 && touchMoved && imgs.length > 1) {
+          const diffX = endX - touchStartX;
+          const diffY = endY - touchStartY;
+          
+          // 判断是水平滑动还是垂直滑动
+          if (Math.abs(diffX) > Math.abs(diffY)) {
+            // 水平滑动：左右切换
+            if (Math.abs(diffX) > 40) {
+              if (diffX > 0) prev(); else next();
+            }
+          } else {
+            // 垂直滑动：上下切换（类似抖音）
+            if (Math.abs(diffY) > 40) {
+              if (diffY > 0) prev(); else next();
+            }
           }
         }
       }

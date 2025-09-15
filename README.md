@@ -209,9 +209,15 @@ npm run lint:fix
 
 ### Docker部署LOGO不显示
 
-如果在Docker部署中遇到LOGO或上传图片不显示的问题，这通常是因为Docker容器中的 `public/uploads` 目录挂载到宿主机时，宿主机对应目录为空或不存在相应文件导致的。
+如果在Docker部署中遇到LOGO或上传图片不显示的问题，这通常是因为Astro在服务器模式下不会自动服务public目录下的静态文件。
 
-**解决方案：**
+**问题已修复** ✅
+
+已添加专用的静态文件服务路由 `src/pages/uploads/[...file].js`，现在上传的图片可以正常访问：
+- 上传API：`POST /api/admin/upload`
+- 图片访问：`GET /uploads/filename.png`
+
+**如果仍有问题，可以尝试：**
 
 1. **重新上传LOGO**（推荐）
    - 访问管理后台：`http://your-domain:4321/admin`

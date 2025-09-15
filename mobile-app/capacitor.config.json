@@ -1,6 +1,6 @@
 {
-  "appId": "com.baoxiaofang.app",
-  "appName": "爆笑坊",
+  "appId": "com.tgchannel.app",
+  "appName": "TG Channel",
   "webDir": "www",
   "server": {
     "url": "http://129.154.52.248:4321/",

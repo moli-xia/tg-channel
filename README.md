@@ -209,12 +209,40 @@ npm run lint:fix
 
 ### Docker部署LOGO不显示
 
-如果在Docker部署中遇到LOGO或上传图片不显示的问题，请参考 [Docker部署LOGO显示问题修复指南](./DOCKER_LOGO_FIX.md)。
+如果在Docker部署中遇到LOGO或上传图片不显示的问题，这通常是因为Docker容器中的 `public/uploads` 目录挂载到宿主机时，宿主机对应目录为空或不存在相应文件导致的。
 
-主要解决方案：
-1. 重新上传LOGO文件到管理后台
-2. 检查 `./public/uploads` 目录权限
-3. 确保Docker挂载配置正确
+**解决方案：**
+
+1. **重新上传LOGO**（推荐）
+   - 访问管理后台：`http://your-domain:4321/admin`
+   - 登录后进入设置页面（默认用户名/密码：admin/admin）
+   - 重新上传LOGO文件并保存配置
+
+2. **恢复丢失的文件**
+   ```bash
+   # 在docker-compose.yml所在目录执行
+   mkdir -p ./public/uploads
+   # 将您的LOGO文件复制到该目录
+   cp /path/to/your/logo.png ./public/uploads/
+   ```
+
+3. **使用默认LOGO**
+   编辑 `./data/config.json` 文件，将LOGO字段设置为空：
+   ```json
+   {
+     "site": {
+       "logo": ""
+     }
+   }
+   ```
+
+4. **检查目录权限**
+   ```bash
+   sudo chown -R 1000:1000 ./public/uploads
+   sudo chmod -R 755 ./public/uploads
+   ```
+
+完成修复后，重启Docker容器：`docker-compose restart`
 
 ## 技术栈
 

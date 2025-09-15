@@ -1,5 +1,5 @@
 import { c as createComponent, r as renderTemplate, d as renderHead, a as addAttribute, b as createAstro } from '../../chunks/astro/server_DLfV5Tyk.mjs';
-import { g as getConfig } from '../../chunks/config_ulrTIJGX.mjs';
+import { g as getConfig } from '../../chunks/config_S9XpwabU.mjs';
 /* empty css                                       */
 export { renderers } from '../../renderers.mjs';
 

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="240" fill="#FFD700" stroke="#FF6B35" stroke-width="8"/>
+  
+  <!-- 左眼 -->
+  <circle cx="200" cy="200" r="25" fill="#333"/>
+  <circle cx="205" cy="195" r="8" fill="#FFF"/>
+  
+  <!-- 右眼 -->
+  <circle cx="312" cy="200" r="25" fill="#333"/>
+  <circle cx="317" cy="195" r="8" fill="#FFF"/>
+  
+  <!-- 鼻子 -->
+  <ellipse cx="256" cy="240" rx="8" ry="12" fill="#FF6B35"/>
+  
+  <!-- 嘴巴 - 大笑 -->
+  <path d="M 180 300 Q 256 380 332 300" stroke="#333" stroke-width="12" fill="none" stroke-linecap="round"/>
+  
+  <!-- 牙齿 -->
+  <rect x="220" y="300" width="8" height="20" fill="#FFF" rx="2"/>
+  <rect x="235" y="300" width="8" height="25" fill="#FFF" rx="2"/>
+  <rect x="250" y="300" width="8" height="28" fill="#FFF" rx="2"/>
+  <rect x="265" y="300" width="8" height="25" fill="#FFF" rx="2"/>
+  <rect x="280" y="300" width="8" height="20" fill="#FFF" rx="2"/>
+  
+  <!-- 眉毛 -->
+  <path d="M 170 160 Q 200 140 230 160" stroke="#333" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M 282 160 Q 312 140 342 160" stroke="#333" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- 脸颊红晕 -->
+  <circle cx="140" cy="260" r="30" fill="#FF9999" opacity="0.6"/>
+  <circle cx="372" cy="260" r="30" fill="#FF9999" opacity="0.6"/>
+  
+  <!-- 装饰性星星 -->
+  <g transform="translate(100,100)">
+    <path d="M 0,-20 L 6,-6 L 20,0 L 6,6 L 0,20 L -6,6 L -20,0 L -6,-6 Z" fill="#FFE55C" opacity="0.8"/>
+  </g>
+  
+  <g transform="translate(400,120)">
+    <path d="M 0,-15 L 4.5,-4.5 L 15,0 L 4.5,4.5 L 0,15 L -4.5,4.5 L -15,0 L -4.5,-4.5 Z" fill="#FFE55C" opacity="0.8"/>
+  </g>
+  
+  <!-- 文字 "爆笑" -->
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#FF6B35">爆笑坊</text>
+</svg>

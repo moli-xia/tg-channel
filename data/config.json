@@ -5,8 +5,8 @@
     "lastLogin": null
   },
   "site": {
-    "title": "TG Channel",
-    "description": "Telegram频道内容聚合平台",
+    "title": "爆笑坊",
+    "description": "爆笑坊 - 搞笑内容聚合平台",
     "channel": "pingrangTV",
     "locale": "zh-cn",
     "timezone": "Asia/Shanghai",
@@ -45,8 +45,7 @@
   "seo": {
     "noIndex": false,
     "noFollow": false,
-    "googleSearchSite": "",
-    "rssBeautify": true
+    "googleSearchSite": ""
   },
   "templates": {
     "activeTemplate": "modern",

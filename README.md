@@ -1,7 +1,7 @@
 # TG Channel - Telegram频道内容聚合平台
 
 一个基于 Astro 构建的现代化 Telegram 频道内容聚合平台，支持多端访问和移动应用。
-- 来源：https://github.com/ccbikai/BroadcastChannel
+
 ## 功能特性
 
 - 📺 Telegram 频道内容聚合
@@ -10,11 +10,6 @@
 - 🌙 深色/浅色主题切换
 - 📦 支持 PWA 和原生 Android 应用
 - ⚡ 基于 Astro 的高性能 SSR
-- 
-### 1.部署
-### 2.开放端口4321后访问IP:4321
-### 3.管理后台为IP:4321/admin
-### 4.打包apk
 
 ## 部署方式
 

@@ -13,6 +13,7 @@ export function getEnv(env, Astro, name) {
       MASTODON: 'social.mastodon',
       BLUESKY: 'social.bluesky',
       COMMENTS: 'site.comments',
+      RSS_BEAUTIFY: 'seo.rssBeautify',
     }
 
     const path = mapping[name]

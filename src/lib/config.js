@@ -42,6 +42,7 @@ const defaultConfig = {
     noIndex: false,
     noFollow: false,
     googleSearchSite: '',
+    rssBeautify: true,
   },
   templates: {
     activeTemplate: 'modern',

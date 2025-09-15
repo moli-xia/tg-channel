@@ -205,6 +205,17 @@ npm run lint:fix
 └── dist/               # 构建输出
 ```
 
+## 常见问题
+
+### Docker部署LOGO不显示
+
+如果在Docker部署中遇到LOGO或上传图片不显示的问题，请参考 [Docker部署LOGO显示问题修复指南](./DOCKER_LOGO_FIX.md)。
+
+主要解决方案：
+1. 重新上传LOGO文件到管理后台
+2. 检查 `./public/uploads` 目录权限
+3. 确保Docker挂载配置正确
+
 ## 技术栈
 
 - **前端框架**: Astro

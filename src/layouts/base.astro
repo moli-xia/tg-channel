@@ -297,10 +297,25 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
             const target = document.getElementById(nextId)
             if (target?.showPopover) {
               const current = openModal
-              // 离开当前弹窗时，暂停其中的视频
-              try { current?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
-              try { current?.hidePopover?.() } catch {}
-              target.showPopover()
+              const currentMedia = current.querySelector('.modal-img, .modal-video')
+              
+              // 添加切换动画
+              if (currentMedia) {
+                currentMedia.classList.add('switching')
+              }
+              
+              // 延迟切换以显示动画效果
+              setTimeout(() => {
+                // 离开当前弹窗时，暂停其中的视频
+                try { current?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+                try { current?.hidePopover?.() } catch {}
+                target.showPopover()
+                
+                // 移除切换动画类
+                if (currentMedia) {
+                  currentMedia.classList.remove('switching')
+                }
+              }, 100)
             }
           }
         } else {
@@ -364,9 +379,25 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
             const nextId = navEl.dataset.target
             const target = document.getElementById(nextId)
             if (target?.showPopover) {
-              try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
-              try { openModal?.hidePopover?.() } catch {}
-              target.showPopover()
+              const current = openModal
+              const currentMedia = current.querySelector('.modal-img, .modal-video')
+              
+              // 添加切换动画
+              if (currentMedia) {
+                currentMedia.classList.add('switching')
+              }
+              
+              // 延迟切换以显示动画效果
+              setTimeout(() => {
+                try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+                try { openModal?.hidePopover?.() } catch {}
+                target.showPopover()
+                
+                // 移除切换动画类
+                if (currentMedia) {
+                  currentMedia.classList.remove('switching')
+                }
+              }, 100)
             }
           }
         }
@@ -387,13 +418,29 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
           const usePrev = e.key === 'ArrowLeft'
           const navEl = openModal.querySelector(usePrev ? '.nav-prev' : '.nav-next')
-          const nextId = navEl?.dataset?.target
-          if (nextId) {
+          if (navEl && navEl.dataset.target) {
+            const nextId = navEl.dataset.target
             const target = document.getElementById(nextId)
             if (target?.showPopover) {
-              try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
-              try { openModal?.hidePopover?.() } catch {}
-              target.showPopover()
+              const current = openModal
+              const currentMedia = current.querySelector('.modal-img, .modal-video')
+              
+              // 添加切换动画
+              if (currentMedia) {
+                currentMedia.classList.add('switching')
+              }
+              
+              // 延迟切换以显示动画效果
+              setTimeout(() => {
+                try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+                try { openModal?.hidePopover?.() } catch {}
+                target.showPopover()
+                
+                // 移除切换动画类
+                if (currentMedia) {
+                  currentMedia.classList.remove('switching')
+                }
+              }, 100)
             }
           }
         }

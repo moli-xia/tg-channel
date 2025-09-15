@@ -2,10 +2,43 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="20"
-    android:viewportHeight="20">
-    <!-- Converted from app/public/favicon.svg -->
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- 背景圆形 -->
     <path
-        android:fillColor="#222222"
-        android:pathData="M5.719 14.75a.997.997 0 0 1-.664-.252L-.005 10l5.341-4.748a1 1 0 0 1 1.328 1.495L3.005 10l3.378 3.002a1 1 0 0 1-.664 1.748zm8.945-.002L20.005 10l-5.06-4.498a.999.999 0 1 0-1.328 1.495L16.995 10l-3.659 3.252a1 1 0 0 0 1.328 1.496zm-4.678 1.417 2-12a1 1 0 1 0-1.972-.329l-2 12a1 1 0 1 0 1.972.329z"/>
+        android:fillColor="#FF6B35"
+        android:pathData="M54,54m-45,0a45,45 0,1 1,90 0a45,45 0,1 1,-90 0" />
+    
+    <!-- 笑脸轮廓 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,54m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0" />
+    
+    <!-- 左眼 -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M44,45m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    
+    <!-- 右眼 -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M64,45m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    
+    <!-- 笑容弧线 -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#333333"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M40,60 Q54,72 68,60" />
+    
+    <!-- 装饰性星星 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M30,30 L32,36 L38,36 L33,40 L35,46 L30,42 L25,46 L27,40 L22,36 L28,36 Z" />
+    
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M78,30 L80,36 L86,36 L81,40 L83,46 L78,42 L73,46 L75,40 L70,36 L76,36 Z" />
 </vector>

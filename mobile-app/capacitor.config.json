@@ -1,10 +1,12 @@
 {
-  "appId": "com.tgchannel.app",
-  "appName": "TG Channel",
+  "appId": "com.baoxiaofang.app",
+  "appName": "爆笑坊",
   "webDir": "www",
   "server": {
     "url": "http://129.154.52.248:4321/",
     "cleartext": true,
-    "allowNavigation": ["http://129.154.52.248:4321", "http://129.154.52.248:4321/*"]
+    "allowNavigation": [
+      "http://129.154.52.248:4321/*"
+    ]
   }
 }

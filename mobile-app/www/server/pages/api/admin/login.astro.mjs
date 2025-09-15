@@ -1,4 +1,4 @@
-import { g as getConfig } from '../../../chunks/config_S9XpwabU.mjs';
+import { g as getConfig } from '../../../chunks/config_ulrTIJGX.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 async function POST(Astro) {

@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">爆笑坊</string>
     <string name="title_activity_main">爆笑坊</string>
-    <string name="package_name">com.baoxiao.fun</string>
-    <string name="custom_url_scheme">com.baoxiao.fun</string>
+    <string name="package_name">com.baoxiaofang.app</string>
+    <string name="custom_url_scheme">com.baoxiaofang.app</string>
 </resources>

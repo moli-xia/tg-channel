@@ -1,4 +1,4 @@
-import { g as getChannelInfo } from '../../chunks/index_CVafTiTZ.mjs';
+import { g as getChannelInfo } from '../../chunks/index_DXnZCgT9.mjs';
 export { renderers } from '../../renderers.mjs';
 
 async function GET(Astro) {

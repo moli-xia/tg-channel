@@ -6,7 +6,7 @@ import { SEO } from 'astro-seo'
 import { getEnv } from '../lib/env'
 import backToTopIcon from '../assets/back-to-top.svg'
 
-const { SITE_URL, RSS_URL, RSS_PREFIX } = Astro.locals
+const { SITE_URL } = Astro.locals
 const { channel } = Astro.props
 
 const locale = getEnv(import.meta.env, Astro, 'LOCALE')
@@ -94,7 +94,7 @@ const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJ
     <meta name="theme-color" content="#0b0b0e" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="alternate" type="application/rss+xml" title={`${RSS_PREFIX}${siteTitle}`} href={RSS_URL} />
+
     <style is:inline>
       @view-transition {
         navigation: auto; /* enabled */

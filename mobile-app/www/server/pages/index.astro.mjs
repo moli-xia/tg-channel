@@ -1,5 +1,5 @@
 import { c as createComponent, r as renderTemplate, e as renderComponent, b as createAstro } from '../chunks/astro/server_DLfV5Tyk.mjs';
-import { $ as $$List } from '../chunks/list_DZt-tM_I.mjs';
+import { $ as $$List } from '../chunks/list_l0IF2Vxs.mjs';
 import { g as getChannelInfo } from '../chunks/index_DXnZCgT9.mjs';
 export { renderers } from '../renderers.mjs';
 

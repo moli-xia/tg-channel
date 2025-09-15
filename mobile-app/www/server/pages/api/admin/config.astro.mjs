@@ -1,4 +1,4 @@
-import { g as getConfig, s as setConfig } from '../../../chunks/config_D1tC_rRf.mjs';
+import { g as getConfig, s as setConfig } from '../../../chunks/config_ulrTIJGX.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 function isLogin(Astro) {

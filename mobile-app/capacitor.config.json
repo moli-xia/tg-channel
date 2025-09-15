@@ -3,8 +3,8 @@
   "appName": "TG Channel",
   "webDir": "www",
   "server": {
-    "url": "http://45.142.166.74:4321/",
+    "url": "http://129.154.52.248:4321/",
     "cleartext": true,
-    "allowNavigation": ["http://45.142.166.74:4321", "http://45.142.166.74:4321/*"]
+    "allowNavigation": ["http://129.154.52.248:4321", "http://129.154.52.248:4321/*"]
   }
 }

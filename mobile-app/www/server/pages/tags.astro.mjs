@@ -1,5 +1,5 @@
 import { c as createComponent, r as renderTemplate, e as renderComponent, b as createAstro, f as renderSlot, m as maybeRenderHead, a as addAttribute } from '../chunks/astro/server_DLfV5Tyk.mjs';
-import { $ as $$Header, a as $$Base } from '../chunks/header_Deqi2UDq.mjs';
+import { $ as $$Header, a as $$Base } from '../chunks/header_Rl2dEKeB.mjs';
 import { g as getChannelInfo, a as getEnv } from '../chunks/index_DXnZCgT9.mjs';
 export { renderers } from '../renderers.mjs';
 

@@ -1,0 +1,45 @@
+---
+---
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>后台登录</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui; display:flex; align-items:center; justify-content:center; min-height:100vh; background:#0f0f12; color:#fff; }
+      .card { width:360px; background:linear-gradient(180deg,#1b1b22,#101015); border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+      h1 { margin:0 0 16px; font-weight:700; font-size:20px; }
+      label { display:block; font-size:12px; color:#9aa; margin:12px 0 6px; }
+      input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a2a35; background:#13131a; color:#e6e6ef; outline:none; }
+      button { width:100%; margin-top:18px; padding:10px 12px; border-radius:10px; background:#4f46e5; color:#fff; border:0; font-weight:600; cursor:pointer; }
+      button:hover { background:#6366f1; }
+      .msg { margin-top:10px; font-size:12px; color:#fca5a5; min-height:1em; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>管理后台登录</h1>
+      <label>用户名</label>
+      <input id="u" placeholder="admin" />
+      <label>密码</label>
+      <input id="p" type="password" placeholder="••••••" />
+      <button id="b">登录</button>
+      <div class="msg" id="m"></div>
+    </div>
+    <script>
+      document.getElementById('b').onclick = async () => {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: document.getElementById('u').value, password: document.getElementById('p').value })
+        })
+        if (res.ok) {
+          location.href = '/admin/settings'
+        } else {
+          const data = await res.json().catch(() => ({}))
+          document.getElementById('m').textContent = data.message || '登录失败'
+        }
+      }
+    </script>
+  </body>
+</html>

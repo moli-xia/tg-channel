@@ -13,14 +13,27 @@ const cache = new LRUCache({
   },
 })
 
+// 规范化文本，增强关键词/标签命中：
+// - 统一全角/半角（NFKC）
+// - 转小写
+// - 去除零宽字符与所有空白
+function normalizeText(input) {
+  return String(input || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, '')
+}
+
 function getVideoStickers($, item, { staticProxy, index }) {
+  const loading = index > 15 ? 'eager' : 'lazy'
   return $(item).find('.js-videosticker_video')?.map((_index, video) => {
     const url = $(video)?.attr('src')
     const imgurl = $(video).find('img')?.attr('src')
     return `
     <div style="background-image: none; width: 256px;">
-      <video src="${staticProxy + url}" width="100%" height="100%" alt="Video Sticker" preload muted autoplay loop playsinline disablepictureinpicture >
-        <img class="sticker" src="${staticProxy + imgurl}" alt="Video Sticker" loading="${index > 15 ? 'eager' : 'lazy'}" />
+      <video src="${toProxy(url, staticProxy)}" width="100%" height="100%" alt="Video Sticker" preload muted autoplay loop playsinline disablepictureinpicture >
+        <img class="sticker" src="${toProxy(imgurl, staticProxy)}" alt="Video Sticker" loading="${loading}" />
       </video>
     </div>
     `
@@ -28,46 +41,192 @@ function getVideoStickers($, item, { staticProxy, index }) {
 }
 
 function getImageStickers($, item, { staticProxy, index }) {
+  const loading = index > 15 ? 'eager' : 'lazy'
   return $(item).find('.tgme_widget_message_sticker')?.map((_index, image) => {
     const url = $(image)?.attr('data-webp')
-    return `<img class="sticker" src="${staticProxy + url}" style="width: 256px;" alt="Sticker" loading="${index > 15 ? 'eager' : 'lazy'}" />`
+    return `<img class="sticker" src="${toProxy(url, staticProxy)}" style="width: 256px;" alt="Sticker" loading="${loading}" />`
   })?.get()?.join('')
 }
 
+function toProxy(u, staticProxy) {
+  if (!u) {
+    return ''
+  }
+  const s = String(u)
+  if (/^https?:\/\//i.test(s)) {
+    return staticProxy + s.replace(/^https?:\/\//i, '')
+  }
+  if (/^\/\//.test(s)) {
+    return staticProxy + s.replace(/^\/\//, '')
+  }
+  return staticProxy + (s.startsWith('/') ? s.slice(1) : s)
+}
+
 function getImages($, item, { staticProxy, id, index, title }) {
-  const images = $(item).find('.tgme_widget_message_photo_wrap')?.map((_index, photo) => {
-    const url = $(photo).attr('style').match(/url\(["'](.*?)["']/)?.[1]
-    const popoverId = `modal-${id}-${_index}`
+  const photos = $(item).find('.tgme_widget_message_photo_wrap')
+  const urls = photos?.map((_i, photo) => $(photo).attr('style').match(/url\(["'](.*?)["']\)/)?.[1])?.get() || []
+  if (!urls.length) {
+    return ''
+  }
+
+  const loading = index > 15 ? 'eager' : 'lazy'
+  const images = urls.map((url, i) => {
+    const popoverId = `modal-${id}-${i}`
+    const prevId = `modal-${id}-${(i - 1 + urls.length) % urls.length}`
+    const nextId = `modal-${id}-${(i + 1) % urls.length}`
+    const imgUrl = toProxy(url, staticProxy)
+    const navHtml = urls.length > 1
+      ? `<div class="nav-btn nav-prev" data-target="${prevId}" aria-label="上一张">&#10094;</div>
+        <div class="nav-btn nav-next" data-target="${nextId}" aria-label="下一张">&#10095;</div>`
+      : ''
     return `
-      <button class="image-preview-button image-preview-wrap" popovertarget="${popoverId}" popovertargetaction="show">
-        <img src="${staticProxy + url}" alt="${title}" loading="${index > 15 ? 'eager' : 'lazy'}" />
+      <button class="image-preview-button image-preview-wrap" popovertarget="${popoverId}" popovertargetaction="show" data-group="${id}" data-index="${i}">
+        <img src="${imgUrl}" alt="${title}" loading="${loading}" />
       </button>
-      <button class="image-preview-button modal" id="${popoverId}" popovertarget="${popoverId}" popovertargetaction="hide" popover>
-        <img class="modal-img" src="${staticProxy + url}" alt="${title}" loading="lazy" />
-      </button>
+      <div class="image-preview-button modal" id="${popoverId}" popover data-group="${id}" data-index="${i}">
+        <div class="modal-backdrop" aria-hidden="true"></div>
+        <img class="modal-img" src="${imgUrl}" alt="${title}" loading="lazy" />
+        ${navHtml}
+      </div>
     `
-  })?.get()
-  return images.length ? `<div class="image-list-container ${images.length % 2 === 0 ? 'image-list-even' : 'image-list-odd'}">${images?.join('')}</div>` : ''
+  })
+
+  return images.length
+    ? `<div class="image-list-container ${images.length % 2 === 0 ? 'image-list-even' : 'image-list-odd'}" data-group="${id}">${images.join('')}</div>`
+    : ''
+}
+
+// helper: extract background-image url from inline style
+function extractBgUrl(style) {
+  if (!style) {
+    return ''
+  }
+  const m = /background-image:\s*url\(\s*['"]?([^'"\s)]+)['"]?\s*\)/i.exec(String(style))
+  return (m && m[1]) ? m[1] : ''
+}
+
+// poster guard: only allow common image extensions; allow telesco.pe and other hosts
+function isSafeImagePoster(u) {
+  if (!u) {
+    return false
+  }
+  const raw = String(u)
+  try {
+    const full = raw.startsWith('//') ? `https:${raw}` : raw
+    const parsed = full.startsWith('http') ? new URL(full) : null
+    const pathname = parsed ? parsed.pathname : raw.split('?')[0]
+    // 仅校验是否为常见图片扩展，允许通过静态代理访问任意上游（包含 telesco.pe）
+    const hasExt = /(?:\.jpe?g|\.png|\.webp)$/i.test(pathname)
+    const hostOk = parsed ? /(?:telesco\.pe|cdn-telegram\.org|telegram\.org|telegram\.me|t\.me)$/i.test(parsed.hostname) : false
+    const looksLikeFile = /\/file\//.test(pathname) || /[?&]token=/.test(raw)
+    return Boolean(hasExt || (hostOk && looksLikeFile))
+  }
+  catch {
+    return false
+  }
 }
 
 function getVideo($, item, { staticProxy, index }) {
-  const video = $(item).find('.tgme_widget_message_video_wrap video')
-  video?.attr('src', staticProxy + video?.attr('src'))
+  const preload = index > 15 ? 'auto' : 'metadata'
+
+  const videoWrap = $(item).find('.tgme_widget_message_video_wrap')
+  const video = videoWrap.find('video')
+
+  function findPoster(scope) {
+    // 1. 从视频相关元素的背景图片中提取
+    const inWrap = scope.find('.tgme_widget_message_video_player, .tgme_widget_message_video_thumb, .tgme_widget_message_video')
+      .toArray()
+      .map(el => extractBgUrl($(el).attr('style')))
+      .find(Boolean)
+    if (inWrap) {
+      return inWrap
+    }
+
+    // 2. 从任何包含video的元素背景图片中提取
+    const any = scope.find('[style*="background-image"][class*="video"]').toArray()
+      .map(el => extractBgUrl($(el).attr('style')))
+      .find(Boolean)
+    if (any) {
+      return any
+    }
+
+    // 3. 从 data-thumb 属性中获取缩略图
+    const thumbAttr = scope.find('[data-thumb]').toArray()
+      .map(el => $(el).attr('data-thumb'))
+      .find(Boolean)
+    if (thumbAttr) {
+      return thumbAttr
+    }
+
+    // 4. 从 data-src 属性中获取缩略图
+    const dataSrc = scope.find('[data-src]').toArray()
+      .map(el => $(el).attr('data-src'))
+      .find(url => url && isSafeImagePoster(url))
+    if (dataSrc) {
+      return dataSrc
+    }
+
+    // 5. 查找视频容器内的img标签
+    const imgInVideo = scope.find('img').toArray()
+      .map(el => $(el).attr('src') || $(el).attr('data-src'))
+      .find(url => url && isSafeImagePoster(url))
+    if (imgInVideo) {
+      return imgInVideo
+    }
+
+    // 6. 从item级别查找
+    const inItem = $(item).find('.tgme_widget_message_video_player, .tgme_widget_message_video_thumb').toArray()
+      .map(el => extractBgUrl($(el).attr('style')))
+      .find(Boolean)
+
+    // 7. Item 级别的 data-thumb 兜底
+    const itemThumb = $(item).find('[data-thumb]').toArray()
+      .map(el => $(el).attr('data-thumb'))
+      .find(Boolean)
+
+    // 8. 查找item内任何img标签作为最后兜底
+    const anyImg = $(item).find('img').toArray()
+      .map(el => $(el).attr('src') || $(el).attr('data-src'))
+      .find(url => url && isSafeImagePoster(url))
+
+    return inItem || itemThumb || anyImg || ''
+  }
+
+  const posterCandidate = video?.attr('poster') || findPoster(videoWrap.length ? videoWrap : $(item))
+  if (isSafeImagePoster(posterCandidate)) {
+    video?.attr('poster', toProxy(posterCandidate, staticProxy))
+  }
+  else {
+    video?.removeAttr('poster')
+  }
+
+  video?.attr('src', toProxy(video?.attr('src'), staticProxy))
     ?.attr('controls', true)
-    ?.attr('preload', index > 15 ? 'auto' : 'metadata')
+    ?.attr('preload', preload)
     ?.attr('playsinline', true).attr('webkit-playsinline', true)
 
-  const roundVideo = $(item).find('.tgme_widget_message_roundvideo_wrap video')
-  roundVideo?.attr('src', staticProxy + roundVideo?.attr('src'))
+  const roundWrap = $(item).find('.tgme_widget_message_roundvideo_wrap')
+  const roundVideo = roundWrap.find('video')
+
+  const roundPosterCandidate = roundVideo?.attr('poster') || findPoster(roundWrap.length ? roundWrap : $(item))
+  if (isSafeImagePoster(roundPosterCandidate)) {
+    roundVideo?.attr('poster', toProxy(roundPosterCandidate, staticProxy))
+  }
+  else {
+    roundVideo?.removeAttr('poster')
+  }
+
+  roundVideo?.attr('src', toProxy(roundVideo?.attr('src'), staticProxy))
     ?.attr('controls', true)
-    ?.attr('preload', index > 15 ? 'auto' : 'metadata')
+    ?.attr('preload', preload)
     ?.attr('playsinline', true).attr('webkit-playsinline', true)
+
   return $.html(video) + $.html(roundVideo)
 }
 
 function getAudio($, item, { staticProxy }) {
   const audio = $(item).find('.tgme_widget_message_voice')
-  audio?.attr('src', staticProxy + audio?.attr('src'))
+  audio?.attr('src', toProxy(audio?.attr('src'), staticProxy))
     ?.attr('controls', true)
   return $.html(audio)
 }
@@ -81,8 +240,9 @@ function getLinkPreview($, item, { staticProxy, index }) {
 
   const image = $(item).find('.link_preview_image')
   const src = image?.attr('style')?.match(/url\(["'](.*?)["']/i)?.[1]
-  const imageSrc = src ? staticProxy + src : ''
-  image?.replaceWith(`<img class="link_preview_image" alt="${title}" src="${imageSrc}" loading="${index > 15 ? 'eager' : 'lazy'}" />`)
+  const loading = index > 15 ? 'eager' : 'lazy'
+  const imageSrc = src ? toProxy(src, staticProxy) : ''
+  image?.replaceWith(`<img class="link_preview_image" alt="${title}" src="${imageSrc}" loading="${loading}" />`)
   return $.html(link)
 }
 
@@ -159,22 +319,48 @@ function getPost($, item, { channel, staticProxy, index = 0 }) {
       $.html($(item).find('.tgme_widget_message_video_player.not_supported')),
       $.html($(item).find('.tgme_widget_message_location_wrap')),
       getLinkPreview($, item, { staticProxy, index }),
-    ].filter(Boolean).join('').replace(/(url\(["'])((https?:)?\/\/)/g, (match, p1, p2, _p3) => {
-      if (p2 === '//') {
-        p2 = 'https://'
-      }
-      if (p2?.startsWith('t.me')) {
-        return false
-      }
-      return `${p1}${staticProxy}${p2}`
-    }),
+    ].filter(Boolean).join('')
+      .replace(/url\((['"])([^'")]+)\1\)/gi, (m, q, urlStr) => {
+        try {
+          const full = urlStr.startsWith('//') ? `https:${urlStr}` : urlStr
+          const u = new URL(full)
+          if (/^t\.me$/i.test(u.hostname)) {
+            return m
+          }
+          const path = urlStr.replace(/^(https?:)?\/\//i, '')
+          return `url(${q}${staticProxy}${path}${q})`
+        }
+        catch {
+          return m
+        }
+      }),
   }
 }
 
 const unnessaryHeaders = ['host', 'cookie', 'origin', 'referer']
 
-export async function getChannelInfo(Astro, { before = '', after = '', q = '', type = 'list', id = '' } = {}) {
-  const cacheKey = JSON.stringify({ before, after, q, type, id })
+export async function getChannelInfo(Astro, { before = '', after = '', q = '', type = 'list', id = '', raw = false } = {}) {
+  // Read filters & paging first so cache respects latest admin settings
+  const filterKeywords = (Astro?.locals?.config?.content?.filterKeywords || []).map(k => String(k).toLowerCase()).filter(Boolean)
+  const blockTags = (Astro?.locals?.config?.content?.blockTags || []).map(k => String(k).toLowerCase()).filter(Boolean)
+  const pageSize = Astro?.locals?.config?.content?.maxPostsPerPage || 20
+
+  // 规范化版本用于匹配，解决零宽字符/全角/大小写等造成的漏判
+  const normalizedKeywords = filterKeywords.map(normalizeText)
+  const normalizedBlockTags = blockTags.map(normalizeText)
+
+  const cacheKey = JSON.stringify({
+    before,
+    after,
+    q,
+    type,
+    id,
+    raw,
+    // include settings signature to bust cache when admin updates filters
+    fk: filterKeywords.join('|'),
+    bt: blockTags.join('|'),
+    ps: pageSize,
+  })
   const cachedResult = cache.get(cacheKey)
 
   if (cachedResult) {
@@ -185,7 +371,9 @@ export async function getChannelInfo(Astro, { before = '', after = '', q = '', t
   // Where t.me can also be telegram.me, telegram.dog
   const host = getEnv(import.meta.env, Astro, 'TELEGRAM_HOST') ?? 't.me'
   const channel = getEnv(import.meta.env, Astro, 'CHANNEL')
-  const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
+  const staticProxyEnv = getEnv(import.meta.env, Astro, 'STATIC_PROXY')
+  const staticProxy = (staticProxyEnv && String(staticProxyEnv).trim().length > 0) ? staticProxyEnv : '/static/'
+  const fetchTimeout = Number(getEnv(import.meta.env, Astro, 'FETCH_TIMEOUT')) || 8000
 
   const url = id ? `https://${host}/${channel}/${id}?embed=1&mode=tme` : `https://${host}/s/${channel}`
   const headers = Object.fromEntries(Astro.request.headers)
@@ -197,33 +385,91 @@ export async function getChannelInfo(Astro, { before = '', after = '', q = '', t
   })
 
   console.info('Fetching', url, { before, after, q, type, id })
-  const html = await $fetch(url, {
-    headers,
-    query: {
-      before: before || undefined,
-      after: after || undefined,
-      q: q || undefined,
-    },
-    retry: 3,
-    retryDelay: 100,
-  })
+  let html
+  try {
+    html = await $fetch(url, {
+      headers,
+      query: {
+        before: before || undefined,
+        after: after || undefined,
+        q: q || undefined,
+      },
+      retry: 3,
+      retryDelay: 100,
+      timeout: fetchTimeout,
+    })
+  }
+  catch (e) {
+    console.error('Fetch Telegram failed', url, e)
+    if (id) {
+      const blocked = { __blocked: true }
+      cache.set(cacheKey, blocked)
+      return blocked
+    }
+    const channelInfo = {
+      posts: [],
+      title: '',
+      description: '',
+      descriptionHTML: '',
+      avatar: '',
+      lastId: '',
+      beforeId: '',
+    }
+    cache.set(cacheKey, channelInfo)
+    return channelInfo
+  }
 
   const $ = cheerio.load(html, {}, false)
+
   if (id) {
     const post = getPost($, null, { channel, staticProxy })
+    const textNorm = normalizeText(post?.text)
+    const htmlNorm = normalizeText(post?.content)
+    const hasKeyword = normalizedKeywords.length > 0 && normalizedKeywords.some(k => textNorm.includes(k) || htmlNorm.includes(k))
+    const hasBlockedTag = normalizedBlockTags.length > 0 && (post?.tags || []).some(t => normalizedBlockTags.includes(normalizeText(t)))
+
+    if (hasKeyword || hasBlockedTag) {
+      const blocked = { __blocked: true }
+      cache.set(cacheKey, blocked)
+      return blocked
+    }
+
     cache.set(cacheKey, post)
     return post
   }
+
   const posts = $('.tgme_channel_history  .tgme_widget_message_wrap')?.map((index, item) => {
     return getPost($, item, { channel, staticProxy, index })
   })?.get()?.reverse().filter(post => ['text'].includes(post.type) && post.id && post.content)
 
+  // 过滤与分页：从配置读取（已在顶部读取 filterKeywords / blockTags / pageSize）
+  const filtered = posts.filter((p) => {
+    const tn = normalizeText(p.text)
+    const hn = normalizeText(p.content)
+    const hasKeyword = normalizedKeywords.length > 0 && normalizedKeywords.some(k => tn.includes(k) || hn.includes(k))
+    const hasBlockedTag = normalizedBlockTags.length > 0 && (p.tags || []).some(t => normalizedBlockTags.includes(normalizeText(t)))
+    return !hasKeyword && !hasBlockedTag
+  })
+
+  const sliced = raw ? filtered : filtered.slice(0, pageSize)
+
+  // 从原始 DOM 中收集当页所有消息 ID，取最新的一条作为分页游标
+  const domIds = $('.tgme_channel_history .tgme_widget_message')
+    .map((_i, el) => $(el).attr('data-post')?.replace(new RegExp(`${channel}/`, 'i'), ''))
+    .get()
+    .map(v => Number.parseInt(v, 10))
+    .filter(n => Number.isFinite(n))
+    .sort((a, b) => a - b)
+  const oldestId = domIds.length ? String(domIds[0]) : (posts?.[0]?.id || '')
+
   const channelInfo = {
-    posts,
+    posts: sliced,
     title: $('.tgme_channel_info_header_title')?.text(),
     description: $('.tgme_channel_info_description')?.text(),
     descriptionHTML: modifyHTMLContent($, $('.tgme_channel_info_description'))?.html(),
     avatar: $('.tgme_page_photo_image img')?.attr('src'),
+    lastId: oldestId,
+    beforeId: oldestId,
   }
 
   cache.set(cacheKey, channelInfo)

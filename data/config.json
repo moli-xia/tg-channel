@@ -1,0 +1,57 @@
+{
+  "admin": {
+    "username": "admin",
+    "password": "admin",
+    "lastLogin": null
+  },
+  "site": {
+    "title": "TG Channel",
+    "description": "Telegram频道内容聚合平台",
+    "channel": "pingrangTV",
+    "locale": "zh-cn",
+    "timezone": "Asia/Shanghai",
+    "theme": "auto",
+    "subtitle": "",
+    "logo": "/uploads/mfkxfxbv-m2buvo.png",
+    "icp": "京ICP备88888888.",
+    "staticProxy": "/static/",
+    "comments": false
+  },
+  "content": {
+    "filterKeywords": [
+      "广告",
+      "spam",
+      "垃圾",
+      "博彩",
+      "USDT",
+      "频道互推"
+    ],
+    "blockTags": [
+      "猫猫",
+      "博彩",
+      "usdt"
+    ],
+    "hideEmptyPosts": true,
+    "maxPostsPerPage": 20
+  },
+  "social": {
+    "telegram": "pingrangTV",
+    "twitter": "",
+    "github": "",
+    "discord": "",
+    "mastodon": "",
+    "bluesky": ""
+  },
+  "seo": {
+    "noIndex": false,
+    "noFollow": false,
+    "googleSearchSite": "",
+    "rssBeautify": true
+  },
+  "templates": {
+    "activeTemplate": "modern",
+    "customCSS": "",
+    "headerHtml": "",
+    "footerHtml": ""
+  }
+}

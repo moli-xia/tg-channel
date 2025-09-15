@@ -1,0 +1,10 @@
+{
+  "appId": "com.tgchannel.app",
+  "appName": "TG Channel",
+  "webDir": "www",
+  "server": {
+    "url": "http://45.142.166.74:4321/",
+    "cleartext": true,
+    "allowNavigation": ["http://45.142.166.74:4321", "http://45.142.166.74:4321/*"]
+  }
+}

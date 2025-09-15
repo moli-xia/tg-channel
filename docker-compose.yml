@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  tg-channel:
+    build: .
+    ports:
+      - "4321:4321"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=4321
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+      - ./public/uploads:/app/public/uploads
+    restart: unless-stopped
+    container_name: tg-channel

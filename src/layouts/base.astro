@@ -10,6 +10,15 @@ const { SITE_URL, RSS_URL, RSS_PREFIX } = Astro.locals
 const { channel } = Astro.props
 
 const locale = getEnv(import.meta.env, Astro, 'LOCALE')
+const theme = getEnv(import.meta.env, Astro, 'THEME') ?? 'auto'
+
+// 后台可配置站点标题、LOGO、ICP备案
+const cfg = Astro.locals?.config || {}
+const siteTitle = (cfg.site?.title && String(cfg.site.title).trim().length > 0)
+  ? cfg.site.title
+  : (channel?.title || '')
+const siteLogo = (cfg.site?.logo && String(cfg.site.logo).trim().length > 0) ? cfg.site.logo : ''
+const icp = (cfg.site?.icp && String(cfg.site.icp).trim().length > 0) ? cfg.site.icp : ''
 
 const seo = channel?.seo
 const reqPathname = Astro.url.pathname.replace(/\/$/, '')
@@ -18,8 +27,10 @@ const canonical = SITE_URL.startsWith('http') ? new URL(SITE_URL).origin + reqPa
 const { origin, pathname } = new URL(canonical)
 const twitter = getEnv(import.meta.env, Astro, 'TWITTER')
 
+const pageTitle = seo?.title || siteTitle
+
 const seoParams = {
-  title: seo?.title,
+  title: pageTitle,
   description: seo?.text ?? channel?.description,
   canonical,
   noindex: seo?.noindex ?? getEnv(import.meta.env, Astro, 'NOINDEX'),
@@ -27,9 +38,9 @@ const seoParams = {
   openGraph: {
     basic: {
       type: 'website',
-      title: channel?.title ?? '',
+      title: pageTitle ?? '',
       url: canonical,
-      image: channel?.avatar ? channel.avatar : origin + '/favicon.ico',
+      image: siteLogo || (channel?.avatar ? channel.avatar : origin + '/favicon.ico'),
     },
     optional: {
       description: seo?.text ?? channel?.description,
@@ -40,9 +51,11 @@ const seoParams = {
     link: [
       {
         rel: 'icon',
-        href: channel?.avatar
-          ? `https://wsrv.nl/?w=64&h=64&fit=cover&mask=circle&url=ssl:${channel?.avatar?.replace(/^https?:\/\//, '')}`
-          : '/favicon.svg',
+        href: siteLogo
+          ? siteLogo
+          : (channel?.avatar
+              ? `https://wsrv.nl/?w=64&h=64&fit=cover&mask=circle&url=ssl:${channel?.avatar?.replace(/^https?:\/\//, '')}`
+              : '/favicon.svg'),
       },
     ],
   },
@@ -65,30 +78,38 @@ const navs = (getEnv(import.meta.env, Astro, 'NAVS') || '')
       href: link[1],
     }
   })
+
+// 仅当注入内容看起来是 HTML（包含 < 符号）时才注入，防止纯文本如 "HEADER_INJECT" 渲染到页面
+const headerInjectSafe = (HEADER_INJECT && /</.test(HEADER_INJECT)) ? HEADER_INJECT : ''
+const footerInjectSafe = (FOOTER_INJECT && /</.test(FOOTER_INJECT)) ? FOOTER_INJECT : ''
 ---
 
 <!doctype html>
-<html lang={locale ?? 'en'}>
+<html lang={locale ?? 'en'} data-theme={theme !== 'auto' ? theme : null}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f4f1ec" />
-    <link rel="alternate" type="application/rss+xml" title={`${RSS_PREFIX}${channel?.title}`} href={RSS_URL} />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- theme-color for light/dark to improve mobile PWA appearance -->
+    <meta name="theme-color" content="#f4f1ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b0e" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="alternate" type="application/rss+xml" title={`${RSS_PREFIX}${siteTitle}`} href={RSS_URL} />
     <style is:inline>
       @view-transition {
         navigation: auto; /* enabled */
       }
     </style>
     <SEO
-      titleTemplate={`%s | ${channel?.title}`}
-      titleDefault={[channel?.title, seoParams.description].filter(Boolean).join(' - ')}
+      titleDefault={pageTitle}
       twitter={{
         card: 'summary_large_image',
         creator: twitter ? `@${twitter}` : undefined,
       }}
       {...seoParams}
     />
-    <Fragment set:html={HEADER_INJECT} />
+    <!-- 仅注入 HTML 片段，避免纯文本出现在页面上 -->
+    {headerInjectSafe && <Fragment set:html={headerInjectSafe} />}
   </head>
 
   <body>
@@ -97,76 +118,320 @@ const navs = (getEnv(import.meta.env, Astro, 'NAVS') || '')
         <div id="main-container">
           <slot />
         </div>
-        <div id="aside-container">
-          <slot name="aside">
-            <div class="nav">
-              <div class="nav-item">
-                <a href={SITE_URL} title={channel?.title} class={`nav-link ${pathname === '/' ? 'current' : ''}`}>
-                  Home
-                </a>
-              </div>
-              {
-                TAGS ? (
-                  <div class="nav-item">
-                    <a
-                      href={`${SITE_URL}tags`}
-                      title="Tags"
-                      class={`nav-link ${pathname === '/tags' ? 'current' : ''}`}
-                    >
-                      Tags
-                    </a>
-                  </div>
-                ) : null
-              }
-              {
-                LINKS ? (
-                  <div class="nav-item">
-                    <a
-                      href={`${SITE_URL}links`}
-                      title="Links"
-                      class={`nav-link ${pathname === '/links' ? 'current' : ''}`}
-                    >
-                      Links
-                    </a>
-                  </div>
-                ) : null
-              }
-              {
-                navs.map((nav) => (
-                  <div class="nav-item">
-                    <a href={nav.href} title={nav.title} target="_blank" rel="noopener" class="nav-link">
-                      {nav.title}
-                    </a>
-                  </div>
-                ))
-              }
-            </div>
-            <input class="search-icon" name="icon" type="checkbox" placeholder="Search" />
-            <form class="search-form" action={searchAction} method="get">
-              {GOOGLE_SEARCH_SITE ? <input type="hidden" name="as_sitesearch" value={GOOGLE_SEARCH_SITE} /> : null}
-              <input type="text" name="q" placeholder="Search" />
-            </form>
-            <div class="copyright-wrap">
-              Powered by
-              <a
-                href="https://github.com/ccbikai/BroadcastChannel"
-                title="BroadcastChannel"
-                target="_blank"
-                rel="noopener"
-              >
-                BroadcastChannel
-              </a> &
-              <a href="https://github.com/Planetable/SiteTemplateSepia" title="Sepia" target="_blank" rel="noopener">
-                Sepia
-              </a>
-            </div>
-          </slot>
-        </div>
+
       </div>
     </div>
+
+    <!-- 搜索弹窗（原生 popover） -->
+    <form id="search-popover" class="search-modal" action={searchAction} method="get" popover hidden>
+      {GOOGLE_SEARCH_SITE ? <input type="hidden" name="as_sitesearch" value={GOOGLE_SEARCH_SITE} /> : null}
+      <input type="text" name="q" placeholder="搜索" autofocus />
+    </form>
+
     <a href="#wrapper" id="back-to-top" aria-label="Back to top">
       <img {...backToTopIcon} alt="Back to Top" />
     </a>
-    <Fragment set:html={FOOTER_INJECT} />
+
+    {/* 移除底部备案信息显示 */}
+
+    {/* 仅注入 HTML 片段，避免纯文本出现在页面上 */}
+    {footerInjectSafe && <Fragment set:html={footerInjectSafe} />}
+
+    <script is:inline>
+      // 主题切换功能
+      function initThemeToggle() {
+        const themeToggle = document.getElementById('theme-toggle')
+        if (!themeToggle) return
+
+        themeToggle.addEventListener('click', (e) => {
+          e.preventDefault()
+          const html = document.documentElement
+          const currentTheme = html.getAttribute('data-theme')
+          
+          if (currentTheme === 'dark') {
+            html.setAttribute('data-theme', 'light')
+            localStorage.setItem('theme', 'light')
+          } else {
+            html.setAttribute('data-theme', 'dark')
+            localStorage.setItem('theme', 'dark')
+          }
+        })
+      }
+
+      // 初始化主题
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme')
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light')
+        document.documentElement.setAttribute('data-theme', theme)
+      }
+
+      // 页面加载时初始化
+      initTheme()
+      document.addEventListener('DOMContentLoaded', initThemeToggle)
+
+      // 单实例防抖（避免重复注入）
+      if (!window.__sepiaModalInit) {
+        window.__sepiaModalInit = true
+
+        document.addEventListener('click', (e) => {
+          const trigger = e.target.closest('[data-popover]')
+          if (trigger) {
+            e.preventDefault()
+            const id = trigger.getAttribute('data-popover')
+            const el = document.getElementById(id)
+            // 优先使用原生 popover
+            if (el?.showPopover) {
+              el.showPopover()
+            }
+            // 兼容不支持 popover 的浏览器：移除 hidden 并添加 open 类用于动画
+            el?.removeAttribute('hidden')
+            el?.classList?.add('open')
+            const input = el?.querySelector('input[name="q"]')
+            input?.focus?.()
+            return
+          }
+        })
+
+        // 关闭逻辑（Esc 或点击页面空白处）——同时兼容 popover 与 fallback
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return
+          const el = document.getElementById('search-popover')
+          if (!el) return
+          if (el.matches(':popover-open')) {
+            try { el.hidePopover() } catch {}
+            el.setAttribute('hidden','')
+            el.classList.remove('open')
+          } else if (!el.hasAttribute('hidden')) {
+            // fallback 已打开
+            el.setAttribute('hidden','')
+            el.classList.remove('open')
+          }
+        })
+
+        document.addEventListener('click', (e) => {
+          const el = document.getElementById('search-popover')
+          if (!el) return
+          const isTrigger = !!e.target.closest('[data-popover="search-popover"]')
+          if (isTrigger) return
+          // 点击非弹窗区域关闭（仅 fallback）
+          if (!el.hasAttribute('hidden') && !el.contains(e.target)) {
+            el.setAttribute('hidden','')
+            el.classList.remove('open')
+          }
+        })
+      }
+    </script>
+
+    <script is:inline>
+      // 单实例防抖（避免 HMR 或重复注入导致多次绑定）
+      if (window.__sepiaImgInit) {
+        // 已初始化，直接返回
+      } else {
+        window.__sepiaImgInit = true
+      }
+
+      // 统一的点击事件处理（仅保留必要的导航与关闭）
+      document.addEventListener('click', (e) => {
+        // 优先处理导航按钮点击：切换图片（使用 .nav-btn）
+        const nav = e.target.closest('.nav-btn')
+        if (nav && nav.dataset.target) {
+          const target = document.getElementById(nav.dataset.target)
+          if (target?.showPopover) {
+            const current = nav.closest('.modal')
+            try { current?.hidePopover?.() } catch {}
+            target.showPopover()
+          }
+          return
+        }
+
+        const openModal = document.querySelector('.modal:popover-open')
+        if (!openModal) return
+
+        // 计算“真实可见的图片内容区域”（考虑 object-fit: scale-down 造成的留白）
+        const imgEl = openModal.querySelector('.modal-img')
+        if (!imgEl) return
+
+        const isPointInImageContent = (img, clientX, clientY) => {
+          const rect = img.getBoundingClientRect()
+          const x = clientX, y = clientY
+          const natW = img.naturalWidth || img.videoWidth || 0
+          const natH = img.naturalHeight || img.videoHeight || 0
+          // 若图片/视频尚未获得固有尺寸（未加载完），一律视为“不在内容内”，避免误触切换
+          if (!natW || !natH) return false
+          const scaleDown = Math.min(rect.width / natW, rect.height / natH, 1)
+          const contentW = natW * scaleDown
+          const contentH = natH * scaleDown
+          const left = rect.left + (rect.width - contentW) / 2
+          const top = rect.top + (rect.height - contentH) / 2
+          const right = left + contentW
+          const bottom = top + contentH
+          return x >= left && x <= right && y >= top && y <= bottom
+        }
+
+        const insideContent = isPointInImageContent(imgEl, e.clientX, e.clientY)
+        
+        // 检查是否点击在导航按钮上，如果是则不处理
+        if (e.target.closest('.nav-btn')) {
+          return
+        }
+        
+        if (insideContent) {
+          // 在内容区域内点按左右半区切换上下一个
+          const rect = imgEl.getBoundingClientRect()
+          const natW = imgEl.naturalWidth || imgEl.videoWidth || rect.width
+          const natH = imgEl.naturalHeight || imgEl.videoHeight || rect.height
+          const scaleDown = Math.min(rect.width / natW, rect.height / natH, 1)
+          const contentW = natW * scaleDown
+          const left = rect.left + (rect.width - contentW) / 2
+          const right = left + contentW
+          const midX = (left + right) / 2
+          const usePrev = e.clientX < midX
+          
+          // 只有在有多张图片时才允许切换
+          const navEl = openModal.querySelector(usePrev ? '.nav-prev' : '.nav-next')
+          if (navEl && navEl.dataset.target) {
+            const nextId = navEl.dataset.target
+            const target = document.getElementById(nextId)
+            if (target?.showPopover) {
+              const current = openModal
+              // 离开当前弹窗时，暂停其中的视频
+              try { current?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+              try { current?.hidePopover?.() } catch {}
+              target.showPopover()
+            }
+          }
+        } else {
+          // 点击留白区域关闭
+          try { openModal?.hidePopover?.() } catch {}
+          try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+        }
+      })
+
+      // 方向键切换与 Esc 关闭
+      document.addEventListener('keydown', (e) => {
+        const openModal = document.querySelector('.modal:popover-open')
+        if (!openModal) return
+        if (['ArrowLeft','ArrowRight','Escape'].includes(e.key)) {
+          e.preventDefault()
+        }
+        if (e.key === 'Escape') {
+          try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+          try { openModal?.hidePopover?.() } catch {}
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          const usePrev = e.key === 'ArrowLeft'
+          const navEl = openModal.querySelector(usePrev ? '.nav-prev' : '.nav-next')
+          const nextId = navEl?.dataset?.target
+          if (nextId) {
+            const target = document.getElementById(nextId)
+            if (target?.showPopover) {
+              try { openModal?.querySelectorAll?.('video')?.forEach(v => v.pause?.()) } catch {}
+              try { openModal?.hidePopover?.() } catch {}
+              target.showPopover()
+            }
+          }
+        }
+      })
+    </script>
+
+    <script is:inline>
+      // 当视频滚出视口时自动暂停
+      (function(){
+        if (window.__autoPauseVideoInit) return; window.__autoPauseVideoInit = true
+        const pause = (v) => { try { v.pause() } catch {} }
+        const io = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            const v = entry.target
+            if (!entry.isIntersecting || entry.intersectionRatio < 0.6) pause(v)
+          })
+        }, { threshold: [0, 0.25, 0.5, 0.6, 0.75, 1] })
+        const observeAll = () => document.querySelectorAll('video').forEach(v => io.observe(v))
+        observeAll()
+        // 监听新节点（例如瀑布流加载或路由切换后注入）
+        const mo = new MutationObserver((muts) => {
+          for (const m of muts) {
+            m.addedNodes && m.addedNodes.forEach((n) => {
+              if (n.nodeType === 1) {
+                if (n.tagName === 'VIDEO') io.observe(n)
+                n.querySelectorAll && n.querySelectorAll('video').forEach(v => io.observe(v))
+              }
+            })
+          }
+        })
+        mo.observe(document.documentElement, { childList: true, subtree: true })
+        // 标签页隐藏时统一暂停
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) document.querySelectorAll('video').forEach(pause)
+        })
+        // 离开页面时清理
+        window.addEventListener('pagehide', () => { io.disconnect(); mo.disconnect() })
+      })()
+    </script>
+
+    <style is:inline>
+      /* 移除底部备案信息样式 */
+      .search-modal {
+        padding: 12px;
+        background: var(--cell-background-color);
+        border-radius: var(--box-border-radius);
+        box-shadow: var(--shadows);
+        border: 1px solid var(--border-color);
+        width: min(92vw, 320px);
+        /* 让弹窗自身尺寸自适应内容，而不是铺满全屏 */
+        height: auto;
+        max-height: none;
+        /* 固定在视口顶部居中 */
+        position: fixed;
+        /* 重置 UA 可能设置的 inset: 0，避免高度被 bottom:0 拉满 */
+        inset: auto;
+        top: 16px;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        transform: translateX(-50%);
+        margin: 0;
+        box-sizing: border-box;
+        z-index: 1001;
+        /* 去除滚动条 */
+        overflow: hidden;
+      }
+      /* 使用原生 popover 的 backdrop 作为遮罩层 */
+      #search-popover::backdrop {
+        background: rgba(0,0,0,0.3);
+      }
+      /* 简化动画效果 */
+      .search-modal {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-4px);
+        transition: opacity .15s ease, transform .15s ease;
+      }
+      .search-modal:popover-open, .search-modal.open {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+       .search-modal input[name="q"] {
+         width: 100%;
+         height: 28px;
+         border: 1px solid var(--border-color);
+         background: var(--cell-background-color);
+         color: var(--foreground-color);
+         padding: 6px 10px;
+         border-radius: 4px;
+         font-size: 14px;
+         outline: none;
+         transition: border-color .2s ease;
+       }
+       .search-modal input[name="q"]::placeholder {
+         color: var(--secondary-color);
+         opacity: .8;
+       }
+       .search-modal input[name="q"]:focus {
+         border-color: #4c8bf5;
+         background: var(--cell-background-color);
+       }
+       .search-hint {
+         display: none;
+       }
+    </style>
   </body>
 </html>

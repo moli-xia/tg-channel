@@ -13,6 +13,10 @@ const post = await getChannelInfo(Astro, {
   id: Astro.params.id,
 })
 
+if ((post as any)?.__blocked) {
+  return new Response('Not Found', { status: 404 })
+}
+
 const channel = {
   ...(channelInfo || {}),
   posts: [post],

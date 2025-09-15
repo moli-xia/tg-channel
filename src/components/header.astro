@@ -6,7 +6,9 @@ import podcast from '../assets/podcast.svg'
 import twitter from '../assets/twitter.svg'
 import github from '../assets/github.svg'
 import discord from '../assets/discord.svg'
-import telegram from '../assets/telegram.svg'
+import search from '../assets/search.svg'
+import themeToggle from '../assets/theme-toggle.svg'
+import moonIcon from '../assets/moon-icon.svg'
 import mastodon from '../assets/mastodon.svg'
 import bluesky from '../assets/bluesky.svg'
 
@@ -16,35 +18,56 @@ const { channel } = Astro.props
 const PODCASRT = getEnv(import.meta.env, Astro, 'PODCASRT')
 const TWITTER = getEnv(import.meta.env, Astro, 'TWITTER')
 const GITHUB = getEnv(import.meta.env, Astro, 'GITHUB')
-const TELEGRAM = getEnv(import.meta.env, Astro, 'TELEGRAM')
+
 const DISCORD = getEnv(import.meta.env, Astro, 'DISCORD')
 const MASTODON = getEnv(import.meta.env, Astro, 'MASTODON')
 const BLUESKY = getEnv(import.meta.env, Astro, 'BLUESKY')
 
+// 新增：可隐藏的按钮列表，逗号分隔（示例：RSS,PODCAST,DISCORD）
+const HIDE_SOCIALS = (getEnv(import.meta.env, Astro, 'HIDE_SOCIALS') || '')
+  .split(',')
+  .map((s) => s.trim().toUpperCase())
+  .filter(Boolean)
+const hidden = new Set(HIDE_SOCIALS)
+const isHidden = (...names) => names.some((n) => hidden.has(String(n).toUpperCase()))
+
 const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
+
+// 后台自定义简介与标题/LOGO
+const cfg = Astro.locals?.config || {}
+const siteTitle = (cfg.site?.title && String(cfg.site.title).trim().length > 0) ? cfg.site.title : (channel?.title || '')
+const introHTML = (cfg.site?.description && String(cfg.site.description).trim().length > 0)
+  ? cfg.site.description
+  : (channel?.descriptionHTML || '')
+const siteSubtitle = (cfg.site?.subtitle && String(cfg.site.subtitle).trim().length > 0) ? cfg.site.subtitle : ''
+const siteLogo = (cfg.site?.logo && String(cfg.site.logo).trim().length > 0) ? cfg.site.logo : ''
+const headerImgSrc = siteLogo || (channel?.avatar?.startsWith('http') ? staticProxy + channel?.avatar : voidFile.src)
 ---
 
 <div id="header">
-  <a href={SITE_URL} title={channel?.title}>
+  <a href={SITE_URL} title={siteTitle}>
     <img
-      src={channel?.avatar?.startsWith('http') ? staticProxy + channel?.avatar : voidFile.src}
-      alt={channel?.title}
+      src={headerImgSrc}
+      alt={siteTitle}
       loading="eager"
       class="header-avatar"
     />
   </a>
   <div class="header-title">
-    <a href={SITE_URL} class="site-title" title={channel?.title}>
-      {channel?.title}
+    <a href={SITE_URL} class="site-title" title={siteTitle}>
+      {siteTitle}
     </a>
+    {siteSubtitle && <div class="site-subtitle">{siteSubtitle}</div>}
   </div>
   <div class="header-icons">
-    <a href={RSS_URL} target="_blank" rel="alternate" type="application/rss+xml" title="RSS Feed">
-      <img {...rss} alt="RSS" class="social-icon" width="1em" />
-    </a>
+    { !isHidden('RSS') && (
+      <a href={RSS_URL} target="_blank" rel="alternate" type="application/rss+xml" title="RSS Feed">
+        <img {...rss} alt="RSS" class="social-icon" width="1em" />
+      </a>
+    )}
 
     {
-      PODCASRT && (
+      PODCASRT && !isHidden('PODCAST','PODCASRT') && (
         <a href={PODCASRT} target="_blank" title="Podcast">
           <img {...podcast} alt="Podcast" class="social-icon" width="1em" />
         </a>
@@ -52,7 +75,7 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
     }
 
     {
-      TWITTER && TWITTER.length > 0 && (
+      TWITTER && TWITTER.length > 0 && !isHidden('TWITTER') && (
         <a href={`https://twitter.com/${TWITTER}`} title="Twitter" target="_blank">
           <img {...twitter} alt={`twitter.com/${TWITTER}`} class="social-icon" width="1em" />
         </a>
@@ -60,23 +83,30 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
     }
 
     {
-      GITHUB && GITHUB.length > 0 && (
+      GITHUB && GITHUB.length > 0 && !isHidden('GITHUB') && (
         <a href={`https://github.com/${GITHUB}`} title="GitHub" target="_blank">
           <img {...github} alt={`github.com/${GITHUB}`} class="social-icon" width="1em" />
         </a>
       )
     }
 
-    {
-      TELEGRAM && TELEGRAM.length > 0 && (
-        <a href={`https://t.me/${TELEGRAM}`} title="Telegram" target="_blank">
-          <img {...telegram} alt={`t.me/${TELEGRAM}`} class="social-icon" width="1em" />
-        </a>
-      )
-    }
+    {/* 搜索触发按钮（替换原 Telegram 图标） */}
+    { !isHidden('SEARCH') && (
+      <a href="#" title="搜索" data-popover="search-popover">
+        <img {...search} alt="Search" class="social-icon" width="1em" />
+      </a>
+    )}
+
+    {/* 主题切换按钮 */}
+    { !isHidden('THEME') && (
+      <a href="#" title="切换主题" id="theme-toggle">
+        <img {...themeToggle} alt="Light Theme" class="social-icon theme-icon light-icon" width="1em" />
+        <img {...moonIcon} alt="Dark Theme" class="social-icon theme-icon dark-icon" width="1em" />
+      </a>
+    )}
 
     {
-      DISCORD && DISCORD.length > 0 && (
+      DISCORD && DISCORD.length > 0 && !isHidden('DISCORD') && (
         <a href={DISCORD} title="Discord" target="_blank">
           <img {...discord} alt="Discord Invite" class="social-icon" width="1em" />
         </a>
@@ -84,7 +114,7 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
     }
 
     {
-      MASTODON && MASTODON.length > 0 && (
+      MASTODON && MASTODON.length > 0 && !isHidden('MASTODON') && (
         <a href={`https://${MASTODON}`} title="Mastodon" target="_blank">
           <img {...mastodon} alt={`@${MASTODON}`} class="social-icon" width="1em" />
         </a>
@@ -92,7 +122,7 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
     }
 
     {
-      BLUESKY && BLUESKY.length > 0 && (
+      BLUESKY && BLUESKY.length > 0 && !isHidden('BLUESKY') && (
         <a href={`https://bsky.app/profile/${BLUESKY}`} title="BlueSky" target="_blank">
           <img {...bluesky} alt={`@${BLUESKY}`} class="social-icon" width="1em" />
         </a>
@@ -102,8 +132,8 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
 </div>
 
 {
-  channel?.descriptionHTML && channel?.descriptionHTML.length > 0 && (
-    <div class="text-box" id="site-intro" set:html={channel?.descriptionHTML} />
+  introHTML && (
+    <div class="text-box" id="site-intro" set:html={introHTML} />
   )
 }
 
@@ -119,8 +149,28 @@ const staticProxy = getEnv(import.meta.env, Astro, 'STATIC_PROXY') ?? '/static/'
     }
   }
 
+  .site-subtitle {
+    font-size: 0.9em;
+    color: var(--secondary-color);
+    margin-top: 4px;
+  }
+
   .social-icon {
     padding: 4px;
+  }
+
+  .theme-icon {
+    display: none;
+  }
+
+  /* 亮色主题显示太阳图标 */
+  :global([data-theme="light"]) .light-icon {
+    display: inline;
+  }
+
+  /* 暗色主题显示月亮图标 */
+  :global([data-theme="dark"]) .dark-icon {
+    display: inline;
   }
 
   .header-icons {

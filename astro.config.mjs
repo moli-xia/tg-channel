@@ -28,6 +28,11 @@ const adapterProvider = process.env.SERVER_ADAPTER || provider
 export default defineConfig({
   output: 'server',
   adapter: providers[adapterProvider] || providers.node,
+  // 新增：显式绑定到 0.0.0.0 并固定端口
+  server: {
+    host: true,
+    port: 4321,
+  },
   integrations: [
     ...(process.env.SENTRY_DSN
       ? [
@@ -46,7 +51,12 @@ export default defineConfig({
         ]
       : []),
   ],
+  // 开发服务器配置
   vite: {
+    server: {
+      port: 4321,
+      host: true,
+    },
     ssr: {
       noExternal: process.env.DOCKER ? !!process.env.DOCKER : undefined,
       external: [

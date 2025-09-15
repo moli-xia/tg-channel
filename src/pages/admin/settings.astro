@@ -1,0 +1,153 @@
+---
+import { getConfig } from '../../lib/config'
+
+const isLogin = /(?:^|;\s*)admin_session=1(?:;|$)/.test(Astro.request.headers.get('cookie') || '')
+if (!isLogin) {
+  return Astro.redirect('/admin')
+}
+
+const cfg = await getConfig()
+---
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>站点设置</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui; padding:20px; background:#0f0f12; color:#e6e6ef; }
+      .row { display:grid; grid-template-columns: 220px 1fr; gap:10px; align-items:center; margin:12px 0; }
+      input, textarea, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a2a35; background:#13131a; color:#e6e6ef; outline:none; }
+      textarea { min-height:80px; }
+      button { padding:10px 16px; border-radius:10px; background:#4f46e5; color:#fff; border:0; font-weight:600; cursor:pointer; }
+      h1 { font-size:20px; margin:0 0 16px; }
+      .card { background:linear-gradient(180deg,#1b1b22,#101015); border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+      .group { margin-bottom:20px; }
+      .two { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+      .msg { color:#a7f3d0; min-height:1em; }
+      a { color:#93c5fd; }
+      .toolbar { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:12px; }
+      .logo-row { grid-template-columns: 220px auto max-content; align-items:center; }
+      .logo-preview { max-height:56px; border-radius:10px; background:#111; padding:6px; border:1px solid #2a2a35; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+
+        <h1>站点设置</h1>
+        <button id="logout" style="background:#ef4444">退出登录</button>
+      </div>
+      <div class="group two">
+        <div class="row"><label>目标频道</label><input id="channel" value={cfg.telegram?.targetChannel || cfg.site?.channel} /></div>
+        <div class="row"><label>分页每页数量</label><input id="pageSize" type="number" value={cfg.content?.maxPostsPerPage || cfg.site?.pageSize} /></div>
+      </div>
+      <div class="group two">
+        <div class="row"><label>屏蔽关键词（逗号分隔）</label><input id="keywords" value={(cfg.content?.filterKeywords||cfg.filters?.filterKeywords||[]).join(', ')} /></div>
+        <div class="row"><label>屏蔽标签（逗号分隔）</label><input id="tags" value={(cfg.content?.blockTags||cfg.filters?.blockTags||[]).join(', ')} /></div>
+      </div>
+      <div class="group two">
+        <div class="row"><label>站点标题</label><input id="title" value={cfg.site.title} /></div>
+        <div class="row"><label>主题</label>
+          <select id="theme" value={cfg.site.theme}>
+            <option value="auto">自动</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </div>
+      </div>
+      <div class="group two">
+        <div class="row"><label>站点副标题</label><input id="subtitle" value={cfg.site?.subtitle||''} placeholder="例如：快乐加油站，笑料收割机" /></div>
+        <div class="row"><label>ICP备案信息</label><input id="icp" value={cfg.site?.icp||''} placeholder="例如：京ICP备xxxxxxxx号" /></div>
+      </div>
+      <div class="group">
+        <div class="row logo-row">
+          <label>站点 LOGO</label>
+          <img id="logoPreview" class="logo-preview" src={cfg.site?.logo||''} alt="Logo 预览" onerror="this.style.display='none'" />
+          <div style="display:flex; gap:8px;">
+            <input id="logoUrl" placeholder="直接填写图片 URL 或使用右侧上传" value={cfg.site?.logo||''} />
+            <input id="logoFile" type="file" accept="image/*" style="width:260px" />
+            <button id="uploadLogo" type="button">上传</button>
+          </div>
+        </div>
+      </div>
+      <div class="group">
+        <div class="row" style="grid-template-columns: 220px 1fr"><label>频道介绍（支持 HTML）</label><textarea id="siteDesc" placeholder="在此输入将显示在首页头部的频道介绍">{cfg.site?.description || ''}</textarea></div>
+      </div>
+      <div class="group two">
+        <div class="row"><label>静态代理前缀</label><input id="staticProxy" value={cfg.site.staticProxy||''} /></div>
+        <div class="row"><label>SEO Robots</label>
+          <select id="robots" value={(cfg.seo?.noIndex || cfg.seo?.noFollow) ? `${cfg.seo.noIndex ? 'noindex' : 'index'},${cfg.seo.noFollow ? 'nofollow' : 'follow'}` : 'index,follow'}>
+            <option value="index,follow">index,follow</option>
+            <option value="noindex,nofollow">noindex,nofollow</option>
+            <option value="noindex,follow">noindex,follow</option>
+          </select>
+        </div>
+      </div>
+      <div class="group">
+        <div class="row"><label>管理员用户名</label><input id="adminUser" value={cfg.admin.username} /></div>
+        <div class="row"><label>管理员密码</label><input id="adminPass" type="password" value={cfg.admin.password} /></div>
+      </div>
+      <div class="group">
+        <button id="save">保存设置</button>
+        <span class="msg" id="msg"></span>
+        <span style="float:right"><a href="/">返回首页</a></span>
+      </div>
+    </div>
+    <script>
+      async function load() {
+        await fetch('/api/admin/config')
+      }
+      load()
+
+      const logoUrl = document.getElementById('logoUrl')
+      const logoFile = document.getElementById('logoFile')
+      const logoPreview = document.getElementById('logoPreview')
+      logoUrl.addEventListener('input', () => { logoPreview.src = logoUrl.value; logoPreview.style.display = logoUrl.value ? 'block' : 'none' })
+
+      document.getElementById('uploadLogo').onclick = async () => {
+        if (!logoFile.files || !logoFile.files[0]) {
+          alert('请选择要上传的图片文件')
+          return
+        }
+        const fd = new FormData()
+        fd.append('file', logoFile.files[0])
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+        if (!res.ok) { alert('上传失败'); return }
+        const data = await res.json().catch(()=>({}))
+        if (data.url) { logoUrl.value = data.url; logoPreview.src = data.url; logoPreview.style.display='block' }
+      }
+
+      document.getElementById('save').onclick = async () => {
+        const robots = document.getElementById('robots').value
+        const [i, f] = robots.split(',').map(s=>s.trim())
+        const body = {
+          site: { 
+            channel: document.getElementById('channel').value.trim(), 
+            title: document.getElementById('title').value, 
+            theme: document.getElementById('theme').value, 
+            staticProxy: document.getElementById('staticProxy').value,
+            description: document.getElementById('siteDesc').value,
+            subtitle: document.getElementById('subtitle').value,
+            logo: document.getElementById('logoUrl').value,
+            icp: document.getElementById('icp').value,
+          },
+          content: { 
+            maxPostsPerPage: parseInt(document.getElementById('pageSize').value||'20', 10), 
+            filterKeywords: document.getElementById('keywords').value.split(',').map(s=>s.trim()).filter(Boolean), 
+            blockTags: document.getElementById('tags').value.split(',').map(s=>s.trim()).filter(Boolean) 
+          },
+          seo: { noIndex: i === 'noindex', noFollow: f === 'nofollow' },
+          admin: { username: document.getElementById('adminUser').value, password: document.getElementById('adminPass').value }
+        }
+        const res = await fetch('/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        if (res.ok) {
+          document.getElementById('msg').textContent = '已保存'
+        } else {
+        }
+      }
+      document.getElementById('logout').onclick = async () => {
+        await fetch('/api/admin/logout', { method: 'POST' })
+        location.href = '/admin'
+      }
+    </script>
+  </body>
+</html>

@@ -1,34 +1,31 @@
-FROM node:lts-alpine AS base
+# 使用官方 Node.js 运行时作为基础镜像
+FROM node:18-alpine
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
+# 设置工作目录
 WORKDIR /app
+
+# 复制 package.json 和 pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
 
-# FROM base AS prod-deps
-# RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+# 安装 pnpm
+RUN npm install -g pnpm
 
-FROM base AS build-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# 安装依赖
+RUN pnpm install --frozen-lockfile
 
-FROM build-deps AS build
+# 复制项目文件
 COPY . .
 
-ARG SENTRY_DSN
-ARG SENTRY_AUTH_TOKEN
-ARG SENTRY_PROJECT
+# 构建项目
+RUN pnpm run build
 
-RUN export $(cat .env.example) && \
-    export DOCKER=true && \
-    pnpm run build
+# 暴露端口
+EXPOSE 4321
 
-FROM base AS runtime
-# COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-
+# 设置环境变量
 ENV HOST=0.0.0.0
 ENV PORT=4321
-EXPOSE 4321
-CMD node ./dist/server/entry.mjs
+ENV NODE_ENV=production
+
+# 启动应用
+CMD ["pnpm", "run", "start"]

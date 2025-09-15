@@ -3,13 +3,9 @@ import Layout from '../layouts/base.astro'
 import Header from '../components/header.astro'
 import Item from '../components/item.astro'
 
-const { SITE_URL } = Astro.locals
-const { channel, before = true, after = true, isItem = false } = Astro.props
+// const { SITE_URL } = Astro.locals
+const { channel, currentPage = 1, hasNext = false, isItem = false } = Astro.props
 const posts = channel.posts ?? []
-
-const beforeCursor = posts[posts.length - 1]?.id
-const afterCursor = posts[0]?.id
-// const cursor = +Astro.params.cursor
 ---
 
 <Layout channel={channel} id="main-container">
@@ -20,26 +16,26 @@ const afterCursor = posts[0]?.id
     {posts.map((post) => <Item post={post} isItem={isItem} />)}
   </div>
 
-  <div class="pages-container">
+  <nav class="pages-container" aria-label="分页导航">
     {
-      before && beforeCursor > 1 ? (
-        <a href={`${SITE_URL}before/${beforeCursor}`} title="Before" class="page">
-          Before
+      currentPage > 1 ? (
+        <a href={currentPage === 2 ? '/' : `/page/${currentPage - 1}`} title="上一页" class="page" rel="prev">
+          上一页
         </a>
       ) : (
-        <span class="page-placeholder">&nbsp;</span>
+        <span class="page-placeholder" aria-hidden="true">&nbsp;</span>
       )
     }
 
-    <div class="pages-info"></div>
+    <div class="pages-info" role="status">第 {currentPage} 页</div>
     {
-      after && afterCursor ? (
-        <a href={`${SITE_URL}after/${afterCursor}`} title="After" class="page">
-          After
+      hasNext ? (
+        <a href={`/page/${currentPage + 1}`} title="下一页" class="page" rel="next">
+          下一页
         </a>
       ) : (
-        <span class="page-placeholder">&nbsp;</span>
+        <span class="page-placeholder" aria-hidden="true">&nbsp;</span>
       )
     }
-  </div>
+  </nav>
 </Layout>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景渐变 -->
+  <defs>
+    <radialGradient id="bgGradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F7931E;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="faceGradient" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F0F0F0;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" stroke="#E55A2B" stroke-width="8"/>
+  
+  <!-- 笑脸背景 -->
+  <circle cx="256" cy="256" r="180" fill="url(#faceGradient)" stroke="#DDD" stroke-width="2"/>
+  
+  <!-- 左眼 -->
+  <ellipse cx="210" cy="220" rx="25" ry="35" fill="#333"/>
+  <ellipse cx="215" cy="215" rx="8" ry="12" fill="#FFF"/>
+  
+  <!-- 右眼 -->
+  <ellipse cx="302" cy="220" rx="25" ry="35" fill="#333"/>
+  <ellipse cx="307" cy="215" rx="8" ry="12" fill="#FFF"/>
+  
+  <!-- 笑容 -->
+  <path d="M 180 300 Q 256 380 332 300" stroke="#333" stroke-width="12" fill="none" stroke-linecap="round"/>
+  
+  <!-- 腮红 -->
+  <ellipse cx="150" cy="280" rx="20" ry="15" fill="#FF9999" opacity="0.6"/>
+  <ellipse cx="362" cy="280" rx="20" ry="15" fill="#FF9999" opacity="0.6"/>
+  
+  <!-- 装饰星星 -->
+  <g fill="#FFD700" opacity="0.8">
+    <!-- 左上角星星 -->
+    <path d="M 120 120 L 125 135 L 140 135 L 128 145 L 133 160 L 120 150 L 107 160 L 112 145 L 100 135 L 115 135 Z"/>
+    <!-- 右上角星星 -->
+    <path d="M 392 120 L 397 135 L 412 135 L 400 145 L 405 160 L 392 150 L 379 160 L 384 145 L 372 135 L 387 135 Z"/>
+    <!-- 右下角星星 -->
+    <path d="M 392 392 L 397 407 L 412 407 L 400 417 L 405 432 L 392 422 L 379 432 L 384 417 L 372 407 L 387 407 Z"/>
+  </g>
+  
+  <!-- 文字"爆笑" -->
+  <text x="256" y="450" font-family="Arial, sans-serif" font-size="36" font-weight="bold" text-anchor="middle" fill="#333">爆笑坊</text>
+</svg>

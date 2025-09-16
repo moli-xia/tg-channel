@@ -14,7 +14,7 @@
 - 📱 响应式设计，支持打包为移动端apk
 - 🌙 深色/浅色主题切换
 ## 演示（已发布在[@releases]([https://github.com/moli-xia])）
-![](demo.png)
+![](demo.jpg)
 ## 部署方式
 
 ### 🚀 一键安装（推荐）
